@@ -2,6 +2,7 @@ import numpy as np
 from random import shuffle
 #from past.builtins import range
 
+
 def softmax_loss_naive(W, X, y, reg):
   """
   Softmax loss function, naive implementation (with loops)
@@ -30,7 +31,30 @@ def softmax_loss_naive(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  num_train = X.shape[0]
+  num_classes = W.shape[1]
+
+  for i in range(num_train):
+    f = np.dot(X[i], W)
+    f -= np.max(f)  # soft(x + c) = soft(x)
+    f_exp = np.exp(f)
+    f_exp_sum = np.sum(f_exp)
+    score_right_class = f_exp[y[i]] / f_exp_sum
+    loss -= np.log(score_right_class)
+
+    for c in range(num_classes):
+      score_c = f_exp[c] / f_exp_sum
+      if c == y[i]:
+        dW[:, c] += (score_c - 1) * X[i]
+      else:
+        dW[:, c] += score_c * X[i]
+
+  loss /= num_train
+  loss += 0.5 * reg * np.sum(W * W)
+
+  dW /= num_train
+  dW += reg * W
+
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
@@ -54,7 +78,24 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  num_train = X.shape[0]
+  num_classes = W.shape[1]
+
+  f = np.dot(X, W)
+  f_max = np.max(f, axis=1, keepdims=True)
+  f -= f_max
+  f_exp = np.exp(f)
+  f_exp_sum = np.sum(f_exp, axis=1, keepdims=True)
+  scores = f_exp / f_exp_sum
+  loss += np.sum(-np.log(scores[np.arange(num_train), y])) / num_train
+  loss += 0.5 * reg * np.sum(W * W)
+
+  correct_class_index = np.zeros((num_train, num_classes))
+  correct_class_index[np.arange(num_train), y] = 1
+  dW += np.dot(X.T, scores - correct_class_index)
+  dW /= num_train
+  dW += reg * W
+
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
